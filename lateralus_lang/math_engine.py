@@ -229,7 +229,10 @@ class Matrix:
             r, c = idx
             self._data[r][c] = _to_num(val)
         else:
-            self._data[idx] = [_to_num(v) for v in val]
+            new_row = [_to_num(v) for v in val]
+            if len(new_row) != self.cols:
+                raise ValueError("Row length must match matrix column count")
+            self._data[idx] = new_row
 
     @property
     def shape(self) -> Tuple[int, int]:

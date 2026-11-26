@@ -296,3 +296,15 @@ class TestNumericalMethods:
         # ∫₀^π sin(x) dx = 2
         result = simpson_integrate(math.sin, 0, math.pi, 1000)
         assert result == pytest.approx(2.0, abs=1e-8)
+
+
+def test_matrix_row_assignment_validation():
+    import pytest
+    from lateralus_lang.math_engine import Matrix
+    m = Matrix([[1, 2, 3], [4, 5, 6]])
+    m[0] = [10, 20, 30]
+    assert m.transpose().shape == (3, 2)
+    with pytest.raises(ValueError):
+        m[0] = [10, 20]
+    with pytest.raises(ValueError):
+        m[0] = [10, 20, 30, 40]
