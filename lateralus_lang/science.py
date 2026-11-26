@@ -116,36 +116,47 @@ ACCELERATION = Dimension(L=1, T=-2)
 
 @dataclass
 class Quantity:
-    """A physical quantity with units."""
-    value: float
-    dimension: Dimension
-    unit_name: str = ""
+    """A physical quantity with units and scale conversion."""
+    def __init__(self, value: float, dimension: Dimension, unit_name: str = "", scale: float = 1.0):
+        self.value = value
+        self.dimension = dimension
+        self.unit_name = unit_name
+        self.scale = scale  # conversion factor to base SI unit (base_value = value * scale)
+
+    @property
+    def base_value(self) -> float:
+        return self.value * self.scale
 
     def __add__(self, other: "Quantity") -> "Quantity":
         if self.dimension != other.dimension:
             raise ValueError(f"Cannot add {self.dimension} and {other.dimension}")
-        return Quantity(self.value + other.value, self.dimension)
+        # Retain self unit_name and scale
+        combined_base = self.base_value + other.base_value
+        return Quantity(combined_base / self.scale, self.dimension, self.unit_name, self.scale)
 
     def __sub__(self, other: "Quantity") -> "Quantity":
         if self.dimension != other.dimension:
             raise ValueError(f"Cannot subtract {self.dimension} from {other.dimension}")
-        return Quantity(self.value - other.value, self.dimension)
+        combined_base = self.base_value - other.base_value
+        return Quantity(combined_base / self.scale, self.dimension, self.unit_name, self.scale)
 
     def __mul__(self, other):
         if isinstance(other, Quantity):
-            return Quantity(self.value * other.value, self.dimension * other.dimension)
-        return Quantity(self.value * other, self.dimension)
+            combined_base = self.base_value * other.base_value
+            combined_scale = self.scale * other.scale
+            return Quantity(combined_base / combined_scale, self.dimension * other.dimension, "", combined_scale)
+        return Quantity(self.value * other, self.dimension, self.unit_name, self.scale)
 
     def __rmul__(self, other):
-        return Quantity(self.value * other, self.dimension)
+        return Quantity(self.value * other, self.dimension, self.unit_name, self.scale)
 
     def __truediv__(self, other):
         if isinstance(other, Quantity):
-            return Quantity(self.value / other.value, self.dimension / other.dimension)
-        return Quantity(self.value / other, self.dimension)
+            return Quantity(self.base_value / other.base_value, self.dimension / other.dimension, "", 1.0)
+        return Quantity(self.value / other, self.dimension, self.unit_name, self.scale)
 
     def __pow__(self, n):
-        return Quantity(self.value ** n, self.dimension ** n)
+        return Quantity(self.value ** n, self.dimension ** n, self.unit_name, self.scale ** n)
 
     def __repr__(self):
         if self.unit_name:
@@ -153,8 +164,10 @@ class Quantity:
         return f"{self.value} [{self.dimension}]"
 
     def to(self, factor: float, unit_name: str = "") -> "Quantity":
-        """Convert to different units."""
-        return Quantity(self.value * factor, self.dimension, unit_name)
+        """Convert to different units given factor (units per base unit)."""
+        # e.g. m.to(100, 'cm') means 1 m = 100 cm, so 1 cm = (1/factor) base unit
+        new_scale = self.scale / factor
+        return Quantity(self.value * factor, self.dimension, unit_name, new_scale)
 
 
 # Convenience constructors

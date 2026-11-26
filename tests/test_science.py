@@ -271,3 +271,15 @@ class TestInterpolation:
     def test_lagrange_single_point(self):
         points = [(3, 7)]
         assert lagrange_interpolate(points, 3) == 7
+
+
+def test_mixed_unit_arithmetic():
+    # Issue #1017: Mixed-unit arithmetic treats 100 cm as 1 m
+    from lateralus_lang.science import meters
+    m = meters(1)
+    cm = m.to(100, "cm")
+    assert cm.value == 100
+    assert (cm / m).value == pytest.approx(1.0)
+    assert (cm + m).value == pytest.approx(200) # 200 cm
+    assert (m + cm).value == pytest.approx(2.0) # 2 m
+    assert (cm - m).value == pytest.approx(0.0)
