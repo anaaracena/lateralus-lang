@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>stdlib-semver</title>
+  <link rel="stylesheet" href="../ltlml.css">
+</head>
+<body>
+  <nav class="ltlml-nav">
+    <span class="nav-brand">LATERALUS</span>
+    <a href="../index.ltlml">Home</a>
+    <a href="../tutorial.ltlml">Tutorial</a>
+    <a href="../cookbook.ltlml">Cookbook</a>
+    <a href="../language-spec.ltlml">Spec</a>
+    <a href="../quick-reference.ltlml">Quick Ref</a>
+    <a href="../architecture.ltlml">Architecture</a>
+  </nav>
+  <div id="ltlml-render" class="ltlml-document"></div>
+  <script id="ltlml-source" type="text/ltlml">
+---
+title: "stdlib-semver"
+author: bad-antics
+date: 2026-04-07
+abstract: Semantic Versioning 2.0.0 parsing, formatting, comparison, and range checks. A version is parsed into [major, minor, patch, prerelease, build], compared by precedence, and tested against caret and tilde ranges.
+
+# Semantic Versioning
+
+A version string has the form `MAJOR.MINOR.PATCH`, optionally followed by a pre-release tag (`-...`) and build metadata (`+...`). The module parses this into a five-element list and provides accessors, comparison, and range helpers.
+
+// Parse into components
+parse("1.2.3")                  // [1, 2, 3, "", ""]
+parse("1.2.3-beta.1+build.42")  // [1, 2, 3, "beta.1", "build.42"]
+
+// A leading v is accepted and stripped
+parse("v2.0.0")                 // [2, 0, 0, "", ""]
+
+# Formatting
+
+`format` builds the core `MAJOR.MINOR.PATCH` string; `format_full` appends pre-release and build metadata when present.
+
+// Core formatting
+format(1, 2, 3)                       // "1.2.3"
+
+// Full formatting with pre-release and build
+format_full(1, 2, 3, "beta.1", "b42") // "1.2.3-beta.1+b42"
+
+# Accessors
+
+The parsed list exposes its fields through helpers.
+
+// Field access
+major(parse("1.2.3"))       // 1
+minor(parse("1.2.3"))       // 2
+patch(parse("1.2.3"))       // 3
+prerelease(parse("1.2.3"))  // ""
+build_meta(parse("1.2.3"))  // ""
+
+// Stability
+is_stable(parse("1.2.3"))       // true
+is_prerelease(parse("1.2.3-rc"))// true
+
+# Comparison and Precedence
+
+`compare` returns -1, 0, or 1 following semver.org precedence. A stable release has higher precedence than a pre-release of the same core version. Build metadata is ignored for precedence.
+
+// Core precedence
+compare(parse("1.0.0"), parse("2.0.0"))   // -1
+compare(parse("2.0.0"), parse("2.0.0"))   // 0
+
+// Pre-release ranks below the stable release
+compare(parse("1.0.0-alpha"), parse("1.0.0"))  // -1
+
+// Convenience predicates
+lt(parse("1.0.0"), parse("1.0.1"))   // true
+gte(parse("1.0.0"), parse("1.0.0"))  // true
+
+# Bumping and Ranges
+
+Version components can be incremented, and caret/tilde ranges checked.
+
+// Increment the patch component
+to_string(bump_patch(parse("1.2.3")))   // "1.2.4"
+
+// Caret allows changes that do not modify the left-most non-zero digit
+satisfies_caret(parse("1.2.3"), 1, 0)   // true
+satisfies_caret(parse("2.0.0"), 1, 0)   // false
+
+// Tilde allows patch-level changes within the same minor
+satisfies_tilde(parse("1.2.9"), 1, 2)   // true
+satisfies_tilde(parse("1.3.0"), 1, 2)   // false
+
+# Canonical Vectors
+
+Fixed vectors used across the test suite:
+
+- parse("1.2.3") -> [1, 2, 3, "", ""]
+- parse("v2.0.0") -> [2, 0, 0, "", ""]
+- format(1, 2, 3) -> "1.2.3"
+- compare("1.0.0", "2.0.0") -> -1
+- compare("1.0.0-alpha", "1.0.0") -> -1
+- is_stable("1.2.3") -> true
+- to_string(bump_patch("1.2.3")) -> "1.2.4"
+
+# Executable Program
+
+fn main() {
+    print(parse("1.2.3-beta.1+build.42"))
+    print(compare(parse("1.0.0-alpha"), parse("1.0.0")))
+    print(to_string(bump_patch(parse("1.2.3"))))
+    print(satisfies_caret(parse("1.2.3"), 1, 0))
+}
+
+  </script>
+  <script src="../ltlml.js"></script>
+</body>
+</html>
